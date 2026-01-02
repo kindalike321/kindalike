@@ -68,9 +68,9 @@ score = \
 @st.cache_data
 def load_data():
     try:
-        return pd.read_csv("matchup.csv", encoding="utf-8")
+        return pd.read_csv("banData.csv", encoding="utf-8")
     except UnicodeDecodeError:
-        return pd.read_csv("matchup.csv", encoding="cp949")
+        return pd.read_csv("banData.csv", encoding="cp949")
 
 df = load_data()
 df.set_index(df.columns[0], inplace=True)  # 첫 열을 index로
@@ -166,4 +166,5 @@ if enemy_input:
                 st.write("추천 없음")
             else:
                 for champ, val in common.items():
+
                     st.write(f"{champ} (총합 점수: {val})")
