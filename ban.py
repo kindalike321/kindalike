@@ -4,20 +4,25 @@ import streamlit as st
 # ===============================
 # 1. 챔피언 데이터
 # ===============================
-my_champions = {
-    "AD": [
+my_champions = \
+{
+    "AD": 
+    [
         "암베사", "자헨", "우르곳", "일라오이", "레넥톤",
         "가렌", "자르반", "올라프", "세트", "잭스",
         "문도", "다리우스", "판테온"
     ],
-    "AP": [
+
+    "AP": 
+    [
         "라이즈", "케넨", "바루스", "스웨인", "그웬",
         "신지드", "에코", "티모", "오로라", "워윅",
         "모데카이저", "말파이트"
     ]
 }
 
-enemy_champions = [   
+enemy_champions = \
+[   
     "가렌", "갱플랭크", "그라가스", "그웬",
     "나르", "나서스", "녹턴",
     "다리우스",
@@ -25,9 +30,9 @@ enemy_champions = [
     "마오카이", "말파이트", "모데카이저", "문도",
     "바루스", "베인", "볼리베어", "블라디미르", "비에고", "뽀삐",
     "사이온", "사일러스", "세주아니", "세트", "쉔", "스웨인", "스카너", "신지드", "신짜오", "스몰더",
-    "아칼리", "아크샨", "아트록스", "암베사", "야스오", "오공", "오로라", "오른", "올라프", "요네",
+    "아칼리", "아크샨", "아트록스", "암베사", "야스오", "에코", "오공", "오로라", "오른", "올라프", "요네",
     "요릭", "우디르", "우르곳", "워윅", "이렐리아", "일라오이",
-    "자크", "자헨", "잭스", "제드", "제이스",
+    "자르반", "자크", "자헨", "잭스", "제드", "제이스",
     "초가스",
     "카르마", "카밀", "카시오페아", "카이사", "케넨", "케일", "퀸", "크산테", "클레드", 
     "탐켄치", "트런들", "트린다미어", "티모",
@@ -38,7 +43,8 @@ enemy_champions = [
 # ===============================
 # 2. 점수와 선호도
 # ===============================
-preference = {  # 챔피언별 선호도
+preference = \
+{  # 챔피언별 선호도
     "암베사": 1.5, "자헨": 1.2, "우르곳": 0.6, "일라오이": 1.3, "레넥톤": 1.0,
     "가렌": 1.3, "자르반": 1.2, "올라프": 1.1, "세트": 1.3, "잭스": 0.9,
     "문도": 1.0, "다리우스": 1.2, "판테온": 1.1,
@@ -47,12 +53,12 @@ preference = {  # 챔피언별 선호도
     "모데카이저": 1.2, "말파이트": 1.0
 }
 
-score_desc = {
-    -100: "본인과의 매치업이라 어차피 못뽑음.",
-    -1: "불리. 절대 뽑으면 안됨.",
-     0: "라인전 반반, 후반밸류 더 좋음",
-     1: "라인전 좋음",
-     2: "라인전, 한타, 후반까지 압살"
+score_desc = \
+{
+    0: "불리. 절대 뽑으면 안됨. 본인과의 매치업이라 어차피 못뽑음.",
+    1: "라인전 반반, 후반밸류 더 좋음",
+    2: "라인전 좋음",
+    3: "라인전, 한타, 후반까지 그냥 압살. 강추."
 }
 
 # ===============================
@@ -96,14 +102,13 @@ def resolve_input(user_input, all_champions):
             return champ
     return None
 
-all_enemies = set(df.index.tolist())
+all_enemies = set(enemy_champions)
 
 # ===============================
 # 5. 점수 → 별 변환
 # ===============================
-def score_to_stars(score, max_stars=2.4):
-    stars = round(score / 2 * max_stars)
-    stars = max(0, stars)
+def score_to_stars(score, max_stars=2.0):
+    stars = round((score - 1) / (3 - 1) * max_stars) + 1
     return "★" * stars
 
 def colorize(champ):
@@ -124,16 +129,18 @@ def colorize(champ):
 def single_counter(enemy, top_n=5):
     row = df.loc[enemy].dropna()
     row = row[row > 0]
-    # 선호도 반영
-    row = row * row.index.map(lambda x: preference.get(x,1.0))
+    row = row.reindex(df.columns.intersection(enemy_champions)).dropna()
+    row = row * row.index.map(lambda x: preference.get(x, 1.0))
     return row.sort_values(ascending=False).head(top_n)
 
 def common_counter(enemies, top_n=5):
     sub = df.loc[enemies]
-    valid = sub.dropna(axis=1, how="any")
-    valid = valid.loc[:, (valid > 0).all()]
-    scores = valid.sum()
-    scores = scores * scores.index.map(lambda x: preference.get(x,1.0))
+    sub = sub.reindex(columns=df.columns.intersection(enemy_champions))
+    sub = sub.fillna(0)
+    sub = sub.loc[:, (sub > 0).all()]
+    scores = sub.sum()
+    scores = scores * scores.index.map(lambda x: preference.get(x, 1.0))
+    scores = scores.dropna()
     return scores.sort_values(ascending=False).head(top_n)
 
 # ===============================
@@ -155,8 +162,6 @@ if enemy_input:
         resolved = resolve_input(r, all_enemies)
         if resolved:
             enemies.append(resolved)
-        elif (r == "ㄴㅁㅎ" or r == "노무현" or r == "운지"):
-            st.warning(f"잉지는 진솔이를 사랑해!")
         else:
             st.warning(f"'{r}' 는 제대로 된 이름이 아니에요  ;ㅅ;  ")
 
@@ -189,7 +194,7 @@ if enemy_input:
                 st.write("추천 없음")
             else:
                 for champ, val in common.items():
-                    stars = score_to_stars(val)
+                    stars = score_to_stars(val, max_stars=0.9)
                     colored = colorize(champ)
                     st.markdown(f"{colored}&nbsp;&nbsp;&nbsp;{stars}", unsafe_allow_html=True)
 
@@ -197,4 +202,3 @@ if enemy_input:
 # ===============================
 # streamlit run "C:/Users/kinda/OneDrive/바탕 화면/배네핏/ban.py"
 # ===============================
-
