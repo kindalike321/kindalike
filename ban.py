@@ -155,6 +155,8 @@ if enemy_input:
         resolved = resolve_input(r, all_enemies)
         if resolved:
             enemies.append(resolved)
+        elif (r == "ㄴㅁㅎ" or r == "노무현" or r == "운지"):
+            st.warning(f"잉지는 진솔이를 사랑해!")
         else:
             st.warning(f"'{r}' 는 제대로 된 이름이 아니에요  ;ㅅ;  ")
 
@@ -195,3 +197,4 @@ if enemy_input:
 # ===============================
 # streamlit run "C:/Users/kinda/OneDrive/바탕 화면/배네핏/ban.py"
 # ===============================
+
