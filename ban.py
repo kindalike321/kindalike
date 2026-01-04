@@ -30,9 +30,9 @@ enemy_champions = \
     "마오카이", "말파이트", "모데카이저", "문도",
     "바루스", "베인", "볼리베어", "블라디미르", "비에고", "뽀삐",
     "사이온", "사일러스", "세주아니", "세트", "쉔", "스웨인", "스카너", "신지드", "신짜오", "스몰더",
-    "아칼리", "아크샨", "아트록스", "암베사", "야스오", "에코", "오공", "오로라", "오른", "올라프", "요네",
+    "아칼리", "아크샨", "아트록스", "암베사", "야스오", "오공", "오로라", "오른", "올라프", "요네",
     "요릭", "우디르", "우르곳", "워윅", "이렐리아", "일라오이",
-    "자르반", "자크", "자헨", "잭스", "제드", "제이스",
+    "자크", "자헨", "잭스", "제드", "제이스",
     "초가스",
     "카르마", "카밀", "카시오페아", "카이사", "케넨", "케일", "퀸", "크산테", "클레드", 
     "탐켄치", "트런들", "트린다미어", "티모",
@@ -44,13 +44,13 @@ enemy_champions = \
 # 2. 점수와 선호도
 # ===============================
 preference = \
-{  # 챔피언별 선호도
-    "암베사": 1.5, "자헨": 1.2, "우르곳": 0.6, "일라오이": 1.3, "레넥톤": 1.0,
-    "가렌": 1.3, "자르반": 1.2, "올라프": 1.1, "세트": 1.3, "잭스": 0.9,
-    "문도": 1.0, "다리우스": 1.2, "판테온": 1.1,
-    "라이즈": 1.3, "케넨": 1.0, "바루스": 0.8, "스웨인": 0.8, "그웬": 1.5,
-    "신지드": 1.0, "에코": 0.9, "티모": 1.2, "오로라": 1.0, "워윅": 0.9,
-    "모데카이저": 1.2, "말파이트": 1.0
+{
+    "암베사": 1.5, "자헨": 1.2, "우르곳": 0.6, "일라오이": 1.3, "레넥톤": 0.9,
+    "가렌": 1.3, "자르반": 1.0, "올라프": 1.1, "세트": 1.3, "잭스": 0.9,
+    "문도": 0.8, "다리우스": 1.2, "판테온": 1.0,
+    "라이즈": 1.3, "케넨": 1.2, "바루스": 0.8, "스웨인": 0.8, "그웬": 1.5,
+    "신지드": 1.1, "에코": 1.0, "티모": 1.2, "오로라": 1.0, "워윅": 0.9,
+    "모데카이저": 1.2, "말파이트": 1.2
 }
 
 score_desc = \
@@ -67,13 +67,20 @@ score_desc = \
 @st.cache_data(ttl=0)
 def load_data():
     try:
-        return pd.read_csv("banData.csv", encoding="utf-8")
+        df = pd.read_csv("banData.csv", encoding="utf-8")
     except UnicodeDecodeError:
-        return pd.read_csv("banData.csv", encoding="cp949")
+        df = pd.read_csv("banData.csv", encoding="cp949")
+
+    df.set_index(df.columns[0], inplace=True)
+    df = df[df.index.notna()]
+    df = df[df.index.isin(enemy_champions)]
+    my_pool = set(sum(my_champions.values(), []))
+    df = df.loc[:, df.columns.isin(my_pool)]
+    df = df.apply(pd.to_numeric, errors="coerce")
+
+    return df
 
 df = load_data()
-df.set_index(df.columns[0], inplace=True)
-df = df.apply(pd.to_numeric, errors="coerce")  # 숫자로 강제 변환
 
 # ===============================
 # 4. 초성 처리
@@ -127,20 +134,24 @@ def colorize(champ):
 # 6. 추천 로직
 # ===============================
 def single_counter(enemy, top_n=5):
+    if enemy not in df.index:
+        return pd.Series(dtype=float)
     row = df.loc[enemy].dropna()
     row = row[row > 0]
-    row = row.reindex(df.columns.intersection(enemy_champions)).dropna()
     row = row * row.index.map(lambda x: preference.get(x, 1.0))
     return row.sort_values(ascending=False).head(top_n)
 
 def common_counter(enemies, top_n=5):
-    sub = df.loc[enemies]
-    sub = sub.reindex(columns=df.columns.intersection(enemy_champions))
-    sub = sub.fillna(0)
+    valid_enemies = [e for e in enemies if e in df.index]
+    if len(valid_enemies) < 2:
+        return pd.Series(dtype=float)
+    sub = df.loc[valid_enemies]
+    sub = sub.dropna(axis=1)
     sub = sub.loc[:, (sub > 0).all()]
+    if sub.empty:
+        return pd.Series(dtype=float)
     scores = sub.sum()
     scores = scores * scores.index.map(lambda x: preference.get(x, 1.0))
-    scores = scores.dropna()
     return scores.sort_values(ascending=False).head(top_n)
 
 # ===============================
