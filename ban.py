@@ -13,7 +13,7 @@ my_champions = \
     ],
     "AP": [
         "그웬", "라이즈", "럼블", "말파이트", 
-        "모데카이저", "바루스", "쉬바나", "에코",
+        "모데카이저", "바루스", "애니", "에코",
         "오로라", "오른", "케넨", "티모"
     ]
 }
@@ -47,7 +47,7 @@ preference = \
     "세트": 1.2, "암베사": 1.3, "우르곳": 1.1, "이렐리아": 0.7,
     "일라오이": 1.5, "자르반": 0.5, "잭스": 0.6, "제드": 0.5,
     "그웬": 1.3, "라이즈": 1.1, "럼블": 0.6, "말파이트": 0.7, 
-    "모데카이저": 1.4, "바루스": 0.9, "쉬바나": 0.5, "에코": 0.5,
+    "모데카이저": 1.4, "바루스": 0.9, "애니": 0.5, "에코": 0.5,
     "오로라": 1.0, "오른": 0.8, "케넨": 1.5, "티모": 1.2
 }
 
@@ -65,9 +65,9 @@ score_desc = \
 @st.cache_data(ttl=0)
 def load_data():
     try:
-        df = pd.read_csv("banData.csv", encoding="utf-8")
+        df = pd.read_csv("banData - 시트1.csv", encoding="utf-8")
     except UnicodeDecodeError:
-        df = pd.read_csv("banData.csv", encoding="cp949")
+        df = pd.read_csv("banData - 시트1.csv", encoding="cp949")
 
     df.set_index(df.columns[0], inplace=True)
     df = df[df.index.notna()]
